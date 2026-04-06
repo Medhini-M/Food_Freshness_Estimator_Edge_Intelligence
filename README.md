@@ -59,7 +59,6 @@ SQLite DB
 freshness_project/
 
 │
-
 ├── app.py
 
 ├── freshness_decision_tree.pkl
@@ -117,39 +116,45 @@ http://<raspberry-pi-ip>:5000
 
 #### Use Gunicorn + Nginx:
 gunicorn -w 3 -b 127.0.0.1:8000 app:app
-🗄️ Database
+
+#### 🗄️ Database
 SQLite used for local storage
+
 Stores:
-Sensor readings
-Predictions
-Timestamped logs
-🧪 Sample Input
-Feature	Value
-Gas Raw	539
-Temperature	28.5°C
-Humidity	65%
-Time	360 mins
-Storage	Room
+
+- Sensor readings
+- Predictions
+- Timestamped logs
+
+#### 🧪 Sample Input
+- Food Type: Apple
+- Gas Raw:	539
+- Temperature:	28.5°C
+- Humidity:	65%
+- Time:	360 mins
+- Storage:	Room
 
 #### Output:
 Prediction: Acceptable
 
 ## 🔧 Hardware Requirements
-Raspberry Pi (Recommended: Pi 4/5)
-DHT22 Sensor (Temperature & Humidity)
-MQ-2 Gas Sensor
-Power Supply
+- Raspberry Pi (Recommended: Pi 4/5)
+- DHT22 Sensor (Temperature & Humidity)
+- MQ-2 Gas Sensor
+- Power Supply
 
 ## 📈 Future Improvements
-Real-time sensor integration (GPIO)
-Mobile app interface
-Cloud synchronization
-Model retraining pipeline
-Data visualization dashboard
+- Real-time sensor integration (GPIO)
+- Mobile app interface
+- Cloud synchronization
+- Model retraining pipeline
+- Data visualization dashboard
 
 ## 👨‍💻 Authors
 Medhini
+
 Tanusshree Avirtha Vijay
+
 Shreenidhi S
 
 ## 📄 License
@@ -157,5 +162,7 @@ This project is licensed under the MIT License.
 
 ## ⭐ Acknowledgements
 Scikit-learn
+
 Flask
+
 Raspberry Pi Foundation
