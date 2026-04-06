@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Freshness Estimator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <main class="page-shell">
+        <header class="page-header">
+            <div class="header-row">
+                <div>
+                    <p class="eyebrow">Edge monitoring dashboard</p>
+                    <h1>Food Freshness Estimator</h1>
+                    <p class="subtitle">
+                        Predict freshness class and view the latest environmental sensor readings.
+                    </p>
+                </div>
+
+                <div class="mode-wrapper">
+                    <span class="mode-badge {% if mode == 'LIVE' %}mode-live{% else %}mode-demo{% endif %}">
+                        {{ mode }} MODE
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <section class="dashboard-grid">
+            <section class="panel form-panel">
+                <h2>Predict freshness</h2>
+
+                <form method="POST" class="prediction-form">
+                    <label for="food_type">Food type</label>
+                    <input
+                        id="food_type"
+                        name="food_type"
+                        type="text"
+                        placeholder="e.g. chicken, apple"
+                        required
+                    >
+
+                    <label for="storage_condition">Storage condition</label>
+                    <select id="storage_condition" name="storage_condition" required>
+                        <option value="fridge">Fridge</option>
+                        <option value="room">Room</option>
+                        <option value="freezer">Freezer</option>
+                        <option value="ambient">Ambient</option>
+                    </select>
+
+                    <label for="gas_raw">Gas raw</label>
+                    <input
+                        id="gas_raw"
+                        name="gas_raw"
+                        type="number"
+                        step="any"
+                        required
+                    >
+
+                    <label for="temperature_c">Temperature (°C)</label>
+                    <input
+                        id="temperature_c"
+                        name="temperature_c"
+                        type="number"
+                        step="any"
+                        required
+                    >
+
+                    <label for="humidity_percent">Humidity (%)</label>
+                    <input
+                        id="humidity_percent"
+                        name="humidity_percent"
+                        type="number"
+                        step="any"
+                        required
+                    >
+
+                    <label for="elapsed_time_minutes">Elapsed time (minutes)</label>
+                    <input
+                        id="elapsed_time_minutes"
+                        name="elapsed_time_minutes"
+                        type="number"
+                        step="any"
+                        required
+                    >
+
+                    <button type="submit">Predict freshness</button>
+                </form>
+
+                <div class="api-card">
+                    <h3>ESP8266 POST route</h3>
+                    <p>
+                        Send JSON data from the ESP8266 to
+                        <code>/api/esp-data</code>
+                        on the Flask server.
+                    </p>
+<pre>{
+  "food_type": "apple",
+  "storage_condition": "room",
+  "gas_raw": 145,
+  "temperature_c": 28.4,
+  "humidity_percent": 62.1,
+  "elapsed_time_minutes": 120
+}</pre>
+                </div>
+
+                {% if error_message %}
+                <div class="result-card error-card">
+                    <h3>Prediction error</h3>
+                    <p>{{ error_message }}</p>
+                </div>
+                {% endif %}
+
+                {% if prediction %}
+                <div class="result-card">
+                    <h3>Prediction result</h3>
+                    <p class="prediction-label">{{ prediction }}</p>
+
+                    <p class="score-line">
+                        Estimated freshness score:
+                        <span>{{ "%.2f"|format(freshness_score|float) }}</span>
+                    </p>
+
+                    <div class="probability-block">
+                        <h4>Class probabilities</h4>
+                        <ul>
+                            {% for item in probabilities %}
+                            <li>
+                                <span>{{ item.label }}</span>
+                                <strong>{{ "%.2f"|format(item.probability|float) }}%</strong>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <p class="formula-text">
+                        S ∈ [0, 100] = 100 × P(Fresh) + 50 × P(Medium) + 0 × P(Spoiled)
+                    </p>
+                </div>
+                {% endif %}
+            </section>
+
+            <section class="right-column">
+                <section class="panel readings-panel">
+                    <div class="panel-head">
+                        <h2>Past 3 readings</h2>
+                        <span class="badge">Latest first</span>
+                    </div>
+
+                    <div class="reading-list">
+                        {% for reading in recent_readings %}
+                        <article class="reading-card">
+                            <div>
+                                <span class="reading-label">Temperature</span>
+                                <p>{{ "%.2f"|format(reading.temperature_c|float) }} °C</p>
+                            </div>
+                            <div>
+                                <span class="reading-label">Humidity</span>
+                                <p>{{ "%.2f"|format(reading.humidity_percent|float) }} %</p>
+                            </div>
+                            <div>
+                                <span class="reading-label">Gas</span>
+                                <p>{{ "%.2f"|format(reading.gas_raw|float) }}</p>
+                            </div>
+                        </article>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="panel chart-panel">
+                    <div class="panel-head">
+                        <h2>Sensor trends</h2>
+                        <span class="badge">Up to 20 readings</span>
+                    </div>
+
+                    <div class="chart-grid">
+                        <div class="chart-card">
+                            <h3>Temperature</h3>
+                            <canvas id="temperatureChart"></canvas>
+                        </div>
+
+                        <div class="chart-card">
+                            <h3>Humidity</h3>
+                            <canvas id="humidityChart"></canvas>
+                        </div>
+
+                        <div class="chart-card full-width">
+                            <h3>Gas</h3>
+                            <canvas id="gasChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </section>
+        </section>
+    </main>
+
+    <script id="chart-data" type="application/json">
+        {{ chart_data | tojson | safe }}
+    </script>
+
+    <script>
+        const chartData = JSON.parse(document.getElementById("chart-data").textContent);
+        const axisColor = "#9ca3af";
+        const gridColor = "rgba(148, 163, 184, 0.16)";
+
+        function buildLineChart(canvasId, label, data, color) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+
+            new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: color,
+                        backgroundColor: color,
+                        tension: 0.35,
+                        fill: false,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: "#e5e7eb"
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: axisColor
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: axisColor
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        buildLineChart("temperatureChart", "Temperature (°C)", chartData.temperature, "#34d399");
+        buildLineChart("humidityChart", "Humidity (%)", chartData.humidity, "#60a5fa");
+        buildLineChart("gasChart", "Gas Raw", chartData.gas, "#f59e0b");
+
+        setTimeout(() => {
+            window.location.reload();
+        }, 10000);
+    </script>
+</body>
+</html>
