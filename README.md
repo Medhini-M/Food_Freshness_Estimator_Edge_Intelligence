@@ -56,22 +56,34 @@ SQLite DB
 ---
 
 ## 📂 Project Structure
-
-
 freshness_project/
+
 │
+
 ├── app.py
+
 ├── freshness_decision_tree.pkl
+
 ├── freshness_logistic_regression.pkl
+
 ├── freshness.db
+
 │
+
 ├── templates/
+
 │ └── index.html
+
 │
+
 ├── static/
+
 │ └── style.css
+
 │
+
 └── dataset/
+
 └── freshness_data.csv
 
 
@@ -82,17 +94,25 @@ freshness_project/
 ### 1. Clone Repository
 #### bash
 git clone https://github.com/your-username/food-freshness-estimator.git
+
 cd food-freshness-estimator 
+
 ### 2. Create Virtual Environment
 python3 -m venv venv
+
 source venv/bin/activate
+
 ### 3. Install Dependencies
 pip install -r requirements.txt
+
 ▶️ Run the Application
+
 python app.py
 
 #### Open in browser:
+
 http://<raspberry-pi-ip>:5000
+
 🌐 Production Deployment
 
 #### Use Gunicorn + Nginx:
@@ -135,7 +155,7 @@ Shreenidhi S
 ## 📄 License
 This project is licensed under the MIT License.
 
-⭐ Acknowledgements
+## ⭐ Acknowledgements
 Scikit-learn
 Flask
 Raspberry Pi Foundation
