@@ -1,4 +1,4 @@
-#Food Freshness Estimator with Edge Intelligence
+# Food Freshness Estimator with Edge Intelligence
 
 A smart IoT-based system that predicts food freshness using sensor data and machine learning, deployed on edge devices like Raspberry Pi.
 
@@ -80,24 +80,22 @@ freshness_project/
 ## ⚙️ Installation (Raspberry Pi / Linux)
 
 ### 1. Clone Repository
-```bash
+#### bash
 git clone https://github.com/your-username/food-freshness-estimator.git
-cd food-freshness-estimator
-2. Create Virtual Environment
+cd food-freshness-estimator 
+### 2. Create Virtual Environment
 python3 -m venv venv
 source venv/bin/activate
-3. Install Dependencies
+### 3. Install Dependencies
 pip install -r requirements.txt
 ▶️ Run the Application
 python app.py
 
-Open in browser:
-
+#### Open in browser:
 http://<raspberry-pi-ip>:5000
 🌐 Production Deployment
 
-Use Gunicorn + Nginx:
-
+#### Use Gunicorn + Nginx:
 gunicorn -w 3 -b 127.0.0.1:8000 app:app
 🗄️ Database
 SQLite used for local storage
@@ -113,24 +111,28 @@ Humidity	65%
 Time	360 mins
 Storage	Room
 
-Output:
-
+#### Output:
 Prediction: Acceptable
-🔧 Hardware Requirements
+
+## 🔧 Hardware Requirements
 Raspberry Pi (Recommended: Pi 4/5)
 DHT22 Sensor (Temperature & Humidity)
 MQ-2 Gas Sensor
 Power Supply
-📈 Future Improvements
+
+## 📈 Future Improvements
 Real-time sensor integration (GPIO)
 Mobile app interface
 Cloud synchronization
 Model retraining pipeline
 Data visualization dashboard
-👨‍💻 Authors
-Your Name
-📄 License
 
+## 👨‍💻 Authors
+Medhini
+Tanusshree Avirtha Vijay
+Shreenidhi S
+
+## 📄 License
 This project is licensed under the MIT License.
 
 ⭐ Acknowledgements
