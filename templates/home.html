@@ -6,7 +6,7 @@
     <title>Food Freshness Estimator</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -18,12 +18,12 @@
                     <p class="eyebrow">Edge monitoring dashboard</p>
                     <h1>Food Freshness Estimator</h1>
                     <p class="subtitle">
-                        Predict freshness class and view the latest environmental sensor readings.
+                        Predict freshness class, freshness score, and remaining safe consumption time using live or demo sensor conditions.
                     </p>
                 </div>
 
                 <div class="mode-wrapper">
-                    <span class="mode-badge {% if mode == 'LIVE' %}mode-live{% else %}mode-demo{% endif %}">
+                    <span id="modeBadge" class="mode-badge {% if mode == 'LIVE' %}mode-live{% else %}mode-demo{% endif %}">
                         {{ mode }} MODE
                     </span>
                 </div>
@@ -32,24 +32,38 @@
 
         <section class="dashboard-grid">
             <section class="panel form-panel">
-                <h2>Predict freshness</h2>
+                <div class="panel-head">
+                    <h2>Predict freshness</h2>
+                    <a class="clear-link" href="{{ url_for('clear_session') }}">Clear result</a>
+                </div>
 
-                <form method="POST" class="prediction-form">
+                {% if mode == 'DEMO' %}
+                <form method="POST" action="{{ url_for('set_demo_environment_route') }}" class="environment-form">
+                    <label for="demo_environment">Demo environment</label>
+                    <select id="demo_environment" name="demo_environment" onchange="this.form.submit()">
+                        <option value="fridge" {% if demo_environment == 'fridge' %}selected{% endif %}>Fridge</option>
+                        <option value="room" {% if demo_environment == 'room' %}selected{% endif %}>Room</option>
+                        <option value="sunlight" {% if demo_environment == 'sunlight' %}selected{% endif %}>Sunlight</option>
+                    </select>
+                </form>
+                {% endif %}
+
+                <form method="POST" action="{{ url_for('index') }}" class="prediction-form">
                     <label for="food_type">Food type</label>
                     <input
                         id="food_type"
                         name="food_type"
                         type="text"
-                        placeholder="e.g. chicken, apple"
+                        placeholder="e.g. apple"
+                        value="{{ form_data.food_type }}"
                         required
                     >
 
                     <label for="storage_condition">Storage condition</label>
                     <select id="storage_condition" name="storage_condition" required>
-                        <option value="fridge">Fridge</option>
-                        <option value="room">Room</option>
-                        <option value="freezer">Freezer</option>
-                        <option value="ambient">Ambient</option>
+                        <option value="fridge" {% if form_data.storage_condition == 'fridge' %}selected{% endif %}>Fridge</option>
+                        <option value="room" {% if form_data.storage_condition == 'room' %}selected{% endif %}>Room</option>
+                        <option value="sunlight" {% if form_data.storage_condition == 'sunlight' %}selected{% endif %}>Sunlight</option>
                     </select>
 
                     <label for="gas_raw">Gas raw</label>
@@ -58,6 +72,7 @@
                         name="gas_raw"
                         type="number"
                         step="any"
+                        value="{{ form_data.gas_raw }}"
                         required
                     >
 
@@ -67,6 +82,7 @@
                         name="temperature_c"
                         type="number"
                         step="any"
+                        value="{{ form_data.temperature_c }}"
                         required
                     >
 
@@ -76,6 +92,7 @@
                         name="humidity_percent"
                         type="number"
                         step="any"
+                        value="{{ form_data.humidity_percent }}"
                         required
                     >
 
@@ -85,28 +102,12 @@
                         name="elapsed_time_minutes"
                         type="number"
                         step="any"
+                        value="{{ form_data.elapsed_time_minutes }}"
                         required
                     >
 
                     <button type="submit">Predict freshness</button>
                 </form>
-
-                <div class="api-card">
-                    <h3>ESP8266 POST route</h3>
-                    <p>
-                        Send JSON data from the ESP8266 to
-                        <code>/api/esp-data</code>
-                        on the Flask server.
-                    </p>
-<pre>{
-  "food_type": "apple",
-  "storage_condition": "room",
-  "gas_raw": 145,
-  "temperature_c": 28.4,
-  "humidity_percent": 62.1,
-  "elapsed_time_minutes": 120
-}</pre>
-                </div>
 
                 {% if error_message %}
                 <div class="result-card error-card">
@@ -116,15 +117,26 @@
                 {% endif %}
 
                 {% if prediction %}
-                <div class="result-card">
+                <div class="result-card prediction-result-card">
                     <h3>Prediction result</h3>
                     <p class="prediction-label">{{ prediction }}</p>
 
+                    {% if freshness_score is not none %}
                     <p class="score-line">
                         Estimated freshness score:
-                        <span>{{ "%.2f"|format(freshness_score|float) }}</span>
+                        <span class="freshness-score-value">{{ "%.2f"|format(freshness_score|float) }}</span>
                     </p>
+                    {% endif %}
 
+                    {% if remaining_hours is not none and remaining_minutes is not none %}
+                    <div class="safe-time-card">
+                        <span class="safe-time-title">Remaining safe consumption time</span>
+                        <p class="safe-time-value">{{ "%.2f"|format(remaining_hours|float) }} hours</p>
+                        <p class="safe-time-subtext">{{ "%.2f"|format(remaining_minutes|float) }} minutes</p>
+                    </div>
+                    {% endif %}
+
+                    {% if probabilities %}
                     <div class="probability-block">
                         <h4>Class probabilities</h4>
                         <ul>
@@ -136,9 +148,10 @@
                             {% endfor %}
                         </ul>
                     </div>
+                    {% endif %}
 
                     <p class="formula-text">
-                        S ∈ [0, 100] = 100 × P(Fresh) + 50 × P(Medium) + 0 × P(Spoiled)
+                        Remaining time is estimated using storage condition, elapsed time, gas, temperature, and humidity thresholds derived from the dataset.
                     </p>
                 </div>
                 {% endif %}
@@ -147,27 +160,42 @@
             <section class="right-column">
                 <section class="panel readings-panel">
                     <div class="panel-head">
-                        <h2>Past 3 readings</h2>
-                        <span class="badge">Latest first</span>
+                        <h2>Past 3 demo readings</h2>
+                        <span id="environmentBadge" class="badge">
+                            {% if mode == 'DEMO' %}
+                                {{ demo_environment|capitalize }}
+                            {% else %}
+                                Live
+                            {% endif %}
+                        </span>
                     </div>
 
-                    <div class="reading-list">
-                        {% for reading in recent_readings %}
-                        <article class="reading-card">
-                            <div>
-                                <span class="reading-label">Temperature</span>
-                                <p>{{ "%.2f"|format(reading.temperature_c|float) }} °C</p>
-                            </div>
-                            <div>
-                                <span class="reading-label">Humidity</span>
-                                <p>{{ "%.2f"|format(reading.humidity_percent|float) }} %</p>
-                            </div>
-                            <div>
-                                <span class="reading-label">Gas</span>
-                                <p>{{ "%.2f"|format(reading.gas_raw|float) }}</p>
-                            </div>
-                        </article>
-                        {% endfor %}
+                    <div id="readingList" class="reading-list">
+                        {% if recent_readings %}
+                            {% for reading in recent_readings %}
+                            <article class="reading-card">
+                                <div>
+                                    <span class="reading-label">Temperature</span>
+                                    <p>{{ "%.2f"|format(reading.temperature_c|float) }} °C</p>
+                                </div>
+                                <div>
+                                    <span class="reading-label">Humidity</span>
+                                    <p>{{ "%.2f"|format(reading.humidity_percent|float) }} %</p>
+                                </div>
+                                <div>
+                                    <span class="reading-label">Gas</span>
+                                    <p>{{ "%.2f"|format(reading.gas_raw|float) }}</p>
+                                </div>
+                            </article>
+                            {% endfor %}
+                        {% else %}
+                            <article class="reading-card empty-state-card">
+                                <div>
+                                    <span class="reading-label">Status</span>
+                                    <p>No demo readings available yet.</p>
+                                </div>
+                            </article>
+                        {% endif %}
                     </div>
                 </section>
 
@@ -203,18 +231,16 @@
     </script>
 
     <script>
-        const chartData = JSON.parse(document.getElementById("chart-data").textContent);
+        const initialChartData = JSON.parse(document.getElementById("chart-data").textContent);
         const axisColor = "#9ca3af";
         const gridColor = "rgba(148, 163, 184, 0.16)";
 
-        function buildLineChart(canvasId, label, data, color) {
+        function createLineChart(canvasId, label, data, color) {
             const ctx = document.getElementById(canvasId);
-            if (!ctx) return;
-
-            new Chart(ctx, {
+            return new Chart(ctx, {
                 type: "line",
                 data: {
-                    labels: chartData.labels,
+                    labels: initialChartData.labels,
                     datasets: [{
                         label: label,
                         data: data,
@@ -223,7 +249,8 @@
                         tension: 0.35,
                         fill: false,
                         pointRadius: 3,
-                        pointHoverRadius: 5
+                        pointHoverRadius: 5,
+                        borderWidth: 2
                     }]
                 },
                 options: {
@@ -231,40 +258,95 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            labels: {
-                                color: "#e5e7eb"
-                            }
+                            labels: { color: "#e5e7eb" }
                         }
                     },
                     scales: {
                         x: {
-                            ticks: {
-                                color: axisColor
-                            },
-                            grid: {
-                                color: gridColor
-                            }
+                            ticks: { color: axisColor },
+                            grid: { color: gridColor }
                         },
                         y: {
-                            ticks: {
-                                color: axisColor
-                            },
-                            grid: {
-                                color: gridColor
-                            }
+                            ticks: { color: axisColor },
+                            grid: { color: gridColor }
                         }
                     }
                 }
             });
         }
 
-        buildLineChart("temperatureChart", "Temperature (°C)", chartData.temperature, "#34d399");
-        buildLineChart("humidityChart", "Humidity (%)", chartData.humidity, "#60a5fa");
-        buildLineChart("gasChart", "Gas Raw", chartData.gas, "#f59e0b");
+        const temperatureChart = createLineChart("temperatureChart", "Temperature (°C)", initialChartData.temperature, "#34d399");
+        const humidityChart = createLineChart("humidityChart", "Humidity (%)", initialChartData.humidity, "#60a5fa");
+        const gasChart = createLineChart("gasChart", "Gas Raw", initialChartData.gas, "#f59e0b");
 
-        setTimeout(() => {
-            window.location.reload();
-        }, 10000);
+        function updateModeBadge(mode) {
+            const badge = document.getElementById("modeBadge");
+            badge.textContent = `${mode} MODE`;
+            badge.classList.remove("mode-live", "mode-demo");
+            badge.classList.add(mode === "LIVE" ? "mode-live" : "mode-demo");
+        }
+
+        function updateEnvironmentBadge(mode, environment) {
+            const badge = document.getElementById("environmentBadge");
+            badge.textContent = mode === "DEMO" ? (environment.charAt(0).toUpperCase() + environment.slice(1)) : "Demo only";
+        }
+
+        function renderReadings(readings) {
+            const list = document.getElementById("readingList");
+            if (!readings || readings.length === 0) {
+                list.innerHTML = `
+                    <article class="reading-card empty-state-card">
+                        <div>
+                            <span class="reading-label">Status</span>
+                            <p>No demo readings available yet.</p>
+                        </div>
+                    </article>
+                `;
+                return;
+            }
+
+            list.innerHTML = readings.map(reading => `
+                <article class="reading-card">
+                    <div>
+                        <span class="reading-label">Temperature</span>
+                        <p>${Number(reading.temperature_c).toFixed(2)} °C</p>
+                    </div>
+                    <div>
+                        <span class="reading-label">Humidity</span>
+                        <p>${Number(reading.humidity_percent).toFixed(2)} %</p>
+                    </div>
+                    <div>
+                        <span class="reading-label">Gas</span>
+                        <p>${Number(reading.gas_raw).toFixed(2)}</p>
+                    </div>
+                </article>
+            `).join("");
+        }
+
+        function updateChart(chart, labels, values) {
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = values;
+            chart.update();
+        }
+
+        async function refreshDashboard() {
+            try {
+                const response = await fetch("{{ url_for('dashboard_data') }}");
+                const data = await response.json();
+
+                updateModeBadge(data.mode);
+                updateEnvironmentBadge(data.mode, data.demo_environment);
+                renderReadings(data.recent_readings);
+
+                updateChart(temperatureChart, data.chart_data.labels, data.chart_data.temperature);
+                updateChart(humidityChart, data.chart_data.labels, data.chart_data.humidity);
+                updateChart(gasChart, data.chart_data.labels, data.chart_data.gas);
+            } catch (error) {
+                console.error("Dashboard refresh failed:", error);
+            }
+        }
+
+        setInterval(refreshDashboard, 10000);
     </script>
 </body>
 </html>
