@@ -13,11 +13,11 @@ DHT dht(DHTPIN, DHTTYPE);
 Adafruit_ADS1115 ads;
 
 // WiFi credentials (avoid spaces ideally)
-const char* ssid = "M_POCO X5 Pro";
-const char* password = "MiNila24";
+const char* ssid = "<WiFi_Network_Name>";
+const char* password = "<WiFi_Password>";
 
 // Flask API endpoint
-const char* server = "http://192.168.17.16:5000/api/esp-data";
+const char* server = "http://<IP>:5000/api/esp-data";
 
 // NTP settings
 const char* ntpServer = "time.google.com";
