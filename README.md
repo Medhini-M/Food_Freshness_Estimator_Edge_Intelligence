@@ -4,7 +4,7 @@ A smart IoT-based system that predicts food freshness using sensor data and mach
 
 ---
 
-## 📌 Overview
+##📌Overview
 
 This project uses environmental and gas sensor data to estimate the freshness level of food (Fresh / Acceptable / Spoiled). It combines:
 
