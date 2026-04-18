@@ -1,4 +1,4 @@
-# Food Freshness Estimator with Edge Intelligence
+#Food Freshness Estimator with Edge Intelligence
 
 A smart IoT-based system that predicts food freshness using sensor data and machine learning, deployed on edge devices like Raspberry Pi.
 
